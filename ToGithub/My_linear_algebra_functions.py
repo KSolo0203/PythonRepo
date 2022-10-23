@@ -1,4 +1,5 @@
 import numpy as np
+from itertools import combinations
 
 # Меняет местами строки/столбцы матрицы:
 def SwapAlongAxis(matrix,axis,ind1,ind2):
@@ -60,6 +61,8 @@ def RecLaplasDeterminant(matrix):
         print(f"Матрица не квадратная, вычислить детерминант невозможно!")
     ld = 0
     counter = 0
+    if max(np.shape(matrix)) == 1:
+        return matrix[0,0]
     for element in matrix[0]:
         ld += element * AlgebraicAddition(matrix,0,counter)
         counter += 1
@@ -164,7 +167,7 @@ def GaussianSolution(matrix):
             solution.append((matrix[i][-1] - ModificatorOfRow(matrix[i],solution)) / matrix[i][i-1])
     return solution[::-1]
 
-# Вспомогательная функция для ешения системы линейных уравнений методом Гаусс
+# Вспомогательная функция для ешения системы линейных уравнений методом Гаусса
 def ModificatorOfRow(row,solution):
     if any(solution):
         modificator = 0
@@ -174,3 +177,48 @@ def ModificatorOfRow(row,solution):
         return modificator
     else:
         return 0
+
+# Решение системы линейных уравнений по правилу Крамера. Вспомогательная функция.
+def DeterminantColumn(matrix,columnToSwap,fmColumn):
+    M = np.copy(matrix)
+    for i in range(np.shape(M)[0]):
+        M[i][columnToSwap] = fmColumn[0][i]
+    return RecLaplasDeterminant(M)
+
+# Решение системы линейных уравнений по правилу Крамера.
+def KramerSolution(matrix,fmColumn):
+    solution = []
+    det = RecLaplasDeterminant(matrix)
+    if IsNotSingular(matrix):
+        for i in range(np.shape(matrix)[0]):
+            solution.append(DeterminantColumn(matrix,i,fmColumn) / det)
+        return solution
+    else:
+        return "Система линейных уравнений не имеет решений (несовместна) либо имеет бесконечное множество решений"        
+
+# Нахождение ранга матрицы методом окаймляющих миноров.  Вспомогательная функция.
+def IsNotNull(matrix):
+    for row in matrix:
+        for element in row:
+            if element != 0:
+                return True
+    return False
+
+# Нахождение ранга матрицы методом окаймляющих миноров.
+def MatrixRang(matrix):
+    rang = 0
+    if not IsNotNull(matrix):
+        pass
+    else:
+        rang = 1
+        dims = np.shape(matrix)
+        for k in range(2,min(dims)+1):
+            for x in combinations(range(0,min(dims)),k):
+                for y in combinations(range(0,max(dims)),k):
+                    if len(x) == len(y) and dims[0] < dims[1]:
+                        M = matrix[list(x)][...,list(y)]    
+                    else:    
+                        M = matrix[list(y)][...,list(x)]
+                    if RecLaplasDeterminant(M) != 0 and rang < k:
+                        rang = k
+    return rang
