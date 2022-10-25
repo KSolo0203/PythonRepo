@@ -222,3 +222,92 @@ def MatrixRang(matrix):
                     if RecLaplasDeterminant(M) != 0 and rang < k:
                         rang = k
     return rang
+
+def AreMatricesCompatible(matrix,fmColumn):
+    return MatrixRang(matrix) == MatrixRang((ExpandedMatrix(matrix,fmColumn)))
+
+def HaveSingleSolution(matrix,fmColumn):
+    return AreMatricesCompatible(matrix,fmColumn) and MatrixRang(matrix) == np.shape(matrix)[0]
+
+# Определение базисного минора.
+def BasisMinor(matrix):
+    basis = []
+    rang = 0
+    if not IsNotNull(matrix):
+        pass
+    else:
+        rang = 1
+        dims = np.shape(matrix)
+        for k in range(2,min(dims)+1):
+            for x in combinations(range(0,min(dims)),k):
+                for y in combinations(range(0,max(dims)),k):
+                    if len(x) == len(y) and dims[0] < dims[1]:
+                        M = matrix[list(x)][...,list(y)]    
+                    else:    
+                        M = matrix[list(y)][...,list(x)]
+                    if RecLaplasDeterminant(M) != 0 and rang < k:
+                        rang = k
+                        basis = []
+                    if RecLaplasDeterminant(M) != 0 and rang == k:
+                        basis.append(M)
+    return basis
+
+# Определение матриц, состоящих из базисных неизвестных, и состоящих из свободных неизвестных.
+def MatricesWithBasisMinors(matrix):
+    solution = []
+    rang = 0
+    if not IsNotNull(matrix):
+        pass
+    else:
+        rang = 1
+        dims = np.shape(matrix)
+        rangex = np.arange(0,min(dims))
+        rangey = np.arange(0,max(dims))
+        for k in range(2,min(dims)+1):
+            for x in combinations(rangex,k):
+                for y in combinations(rangey,k):
+                    if len(x) == len(y) and dims[0] < dims[1]:
+                        minor = matrix[list(x)][...,list(y)]
+                        free = matrix[list(x)][...,list(set(rangey) - set(y))]
+                    else:    
+                        minor = matrix[list(y)][...,list(x)]
+                        free = matrix[list(y)][...,list(set(rangex) - set(x))]
+                    determinant = RecLaplasDeterminant(minor)
+                    if determinant != 0 and rang < k:
+                        rang = k
+                        solution = []
+                    if determinant != 0 and rang == k:
+                        solution.append((minor,free))
+                    # if determinant != 0 and rang == k and np.any(minor[-1]) != 0 and np.any(free[-1]) != 0:
+                    #     solution.append((minor,free))
+    return solution
+
+# НЕДОДЕЛАНО !!! Общее решение системы линейных уравнений.
+def CommonSolution(matrix,fmColumn): 
+    record = MatricesWithBasisMinors(ToStepwise(ExpandedMatrix(matrix,fmColumn)))[0]
+    basis = record[0]
+    free = record[1]
+    solution = np.zeros([np.shape(matrix)[1]])
+    # if (basis[-1].count(0) == len(basis[-1]) - 1) and (free[-1].count(0) == len(free[-1]) - 1):
+    #     for i in range(len(basis)):
+    #         if basis[i] != 0:
+    #             solution[i] = free[]
+    return solution # Общее и фундаментальное решения отсутствуют...  
+
+def TrivialSolution(matrix):
+    return np.zeros([np.shape(matrix)[1]])
+
+# Решение системы линейных уранений
+def FindSolution(matrix,fmColumn):
+    if IsHomogenous(fmColumn):
+        if HaveSingleSolution(matrix,fmColumn):
+            return TrivialSolution(matrix)
+        else:
+            return CommonSolution(matrix,fmColumn)
+    elif AreMatricesCompatible(matrix,fmColumn):
+        if HaveSingleSolution(matrix,fmColumn):
+            return KramerSolution(matrix,fmColumn)
+        else:
+            return CommonSolution(matrix,fmColumn)          
+    else:
+        return f"Данная система линейных уравнений не совместна!"
